@@ -1,0 +1,380 @@
+openapi: 3.1.0
+info:
+  title: Time Management Assistant API
+  version: 1.0.0
+  description: HTTP API contract for personal AI schedule management.
+servers:
+  - url: http://localhost:8000
+    description: Local development
+paths:
+  /tasks/create:
+    post:
+      operationId: create_task
+      summary: Create a task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTaskRequest"
+      responses:
+        "200":
+          description: Created task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskResponse"
+  /tasks/update:
+    post:
+      operationId: update_task
+      summary: Update a task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTaskRequest"
+      responses:
+        "200":
+          description: Updated task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskWithBeforeResponse"
+  /tasks/delete:
+    post:
+      operationId: delete_task
+      summary: Delete a task after user confirmation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteTaskRequest"
+      responses:
+        "200":
+          description: Deleted task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteTaskResponse"
+  /tasks/query:
+    get:
+      operationId: query_schedule
+      summary: Query tasks by date or time range
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: query
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/TaskStatus"
+        - name: start_time_from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: start_time_to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: include_done
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: true
+        - name: timezone
+          in: query
+          required: false
+          schema:
+            type: string
+            default: Asia/Shanghai
+      responses:
+        "200":
+          description: Matching tasks
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskListResponse"
+  /tasks/complete:
+    post:
+      operationId: complete_task
+      summary: Mark a task as done
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompleteTaskRequest"
+      responses:
+        "200":
+          description: Completed task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskWithBeforeResponse"
+  /summary/daily:
+    post:
+      operationId: daily_summary
+      summary: Generate a daily summary
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DailySummaryRequest"
+      responses:
+        "200":
+          description: Daily summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailySummaryResponse"
+  /reminder/check:
+    post:
+      operationId: check_reminders
+      summary: Check and mark due reminders
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckRemindersRequest"
+      responses:
+        "200":
+          description: Due reminders
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReminderCheckResponse"
+components:
+  schemas:
+    TaskPriority:
+      type: string
+      enum: [low, medium, high]
+      default: medium
+    TaskStatus:
+      type: string
+      enum: [pending, done, cancelled]
+      default: pending
+    NotificationChannel:
+      type: string
+      enum: [telegram, email, bark, wechat_work, dingtalk]
+    ReminderStatus:
+      type: string
+      enum: [pending, sent, failed, cancelled]
+    Task:
+      type: object
+      required: [id, title, priority, status, reminded, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        start_time:
+          type: string
+          format: date-time
+          nullable: true
+        end_time:
+          type: string
+          format: date-time
+          nullable: true
+        priority:
+          $ref: "#/components/schemas/TaskPriority"
+        status:
+          $ref: "#/components/schemas/TaskStatus"
+        reminder_time:
+          type: string
+          format: date-time
+          nullable: true
+        recurring_rule:
+          type: string
+          nullable: true
+        reminded:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Reminder:
+      type: object
+      required: [id, task_id, send_time, channel, status, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        task_id:
+          type: string
+          format: uuid
+        send_time:
+          type: string
+          format: date-time
+        channel:
+          $ref: "#/components/schemas/NotificationChannel"
+        status:
+          $ref: "#/components/schemas/ReminderStatus"
+        sent_at:
+          type: string
+          format: date-time
+          nullable: true
+        error_message:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    CreateTaskRequest:
+      type: object
+      required: [title]
+      properties:
+        user_command:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        start_time:
+          type: string
+          format: date-time
+          nullable: true
+        end_time:
+          type: string
+          format: date-time
+          nullable: true
+        priority:
+          $ref: "#/components/schemas/TaskPriority"
+        reminder_time:
+          type: string
+          format: date-time
+          nullable: true
+        recurring_rule:
+          type: string
+          nullable: true
+    UpdateTaskRequest:
+      type: object
+      required: [task_id, changes]
+      properties:
+        user_command:
+          type: string
+        task_id:
+          type: string
+          format: uuid
+        changes:
+          type: object
+          additionalProperties: true
+    DeleteTaskRequest:
+      type: object
+      required: [task_id]
+      properties:
+        user_command:
+          type: string
+        task_id:
+          type: string
+          format: uuid
+    CompleteTaskRequest:
+      type: object
+      required: [task_id]
+      properties:
+        user_command:
+          type: string
+        task_id:
+          type: string
+          format: uuid
+    DailySummaryRequest:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        timezone:
+          type: string
+          default: Asia/Shanghai
+    CheckRemindersRequest:
+      type: object
+      properties:
+        now:
+          type: string
+          format: date-time
+        channels:
+          type: array
+          items:
+            $ref: "#/components/schemas/NotificationChannel"
+    TaskResponse:
+      type: object
+      required: [task_id, task]
+      properties:
+        task_id:
+          type: string
+          format: uuid
+        task:
+          $ref: "#/components/schemas/Task"
+    TaskWithBeforeResponse:
+      type: object
+      required: [task, before]
+      properties:
+        task:
+          $ref: "#/components/schemas/Task"
+        before:
+          $ref: "#/components/schemas/Task"
+    DeleteTaskResponse:
+      type: object
+      required: [deleted_task]
+      properties:
+        deleted_task:
+          $ref: "#/components/schemas/Task"
+    TaskListResponse:
+      type: object
+      required: [tasks]
+      properties:
+        tasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Task"
+    ReminderCheckResponse:
+      type: object
+      required: [reminders, count]
+      properties:
+        reminders:
+          type: array
+          items:
+            $ref: "#/components/schemas/Reminder"
+        count:
+          type: integer
+    DailySummaryResponse:
+      type: object
+      required: [completed, unfinished, completion_rate]
+      properties:
+        completed:
+          type: array
+          items:
+            $ref: "#/components/schemas/Task"
+        unfinished:
+          type: array
+          items:
+            $ref: "#/components/schemas/Task"
+        completion_rate:
+          type: number
