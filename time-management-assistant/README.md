@@ -84,7 +84,7 @@ Out of scope:
 
 ## Backend Quick Start
 
-Step 1 provides a minimal FastAPI application with a health check only. It does not connect to PostgreSQL yet and does not implement `/tasks/*` business APIs yet.
+The backend currently provides FastAPI startup, configuration loading, a basic health check, and a PostgreSQL connection health check. It does not implement `/tasks/*` business APIs yet.
 
 Create a virtual environment and install dependencies:
 
@@ -92,6 +92,24 @@ Create a virtual environment and install dependencies:
 python3 -m venv .venv
 . .venv/bin/activate
 pip install -r time-management-assistant/backend/requirements.txt
+```
+
+Copy the environment template:
+
+```bash
+cp time-management-assistant/backend/.env.example time-management-assistant/backend/.env
+```
+
+Set `DATABASE_URL` in `time-management-assistant/backend/.env`. For remote development, keep PostgreSQL private and open an SSH tunnel:
+
+```bash
+ssh -L 5432:127.0.0.1:5432 ubuntu@124.222.128.159
+```
+
+Then use a local tunnel database URL:
+
+```text
+postgresql+psycopg://time_assistant:<password>@127.0.0.1:5432/time_management_assistant
 ```
 
 Run the API locally:
@@ -114,5 +132,20 @@ Expected response:
   "service": "Time Management Assistant API",
   "environment": "development",
   "timezone": "Asia/Shanghai"
+}
+```
+
+With the SSH tunnel and `.env` configured, verify database connectivity:
+
+```bash
+curl http://127.0.0.1:8000/health/db
+```
+
+Expected response:
+
+```json
+{
+  "status": "ok",
+  "database": "time_management_assistant"
 }
 ```
