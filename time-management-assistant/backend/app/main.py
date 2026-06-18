@@ -1,0 +1,18 @@
+from fastapi import FastAPI
+
+from app.api.health import router as health_router
+from app.config import get_settings
+
+
+def create_app() -> FastAPI:
+    settings = get_settings()
+    app = FastAPI(
+        title=settings.app_name,
+        version="1.0.0",
+        description="Backend service for the Time Management Assistant.",
+    )
+    app.include_router(health_router, prefix=settings.api_prefix)
+    return app
+
+
+app = create_app()

@@ -1,11 +1,11 @@
 # Time Management Assistant
 
-个人时间管理 AI Agent 工程规范。当前阶段只定义产品、Agent 规则、工具、数据库、HTTP API 和 MCP Server 契约，后续再基于这些规范生成 FastAPI 后端、Scheduler、MCP Server 和测试。
+个人时间管理 AI Agent 工程。当前阶段已经完成 Agent 规范，并初始化了最小 FastAPI 后端骨架；后续会继续实现数据库、业务 API、Scheduler、MCP Server 和测试。
 
 ## Status
 
 Version: v1.0
-Status: Specification Draft
+Status: Backend Bootstrap
 Owner: hsx
 
 ## Goal
@@ -26,6 +26,15 @@ time-management-assistant/
 ├── MCP_SERVER_SPEC.md
 ├── docs/
 ├── backend/
+│   ├── app/
+│   │   ├── api/
+│   │   ├── models/
+│   │   ├── repositories/
+│   │   ├── schemas/
+│   │   ├── services/
+│   │   └── tools/
+│   ├── .env.example
+│   └── requirements.txt
 ├── scheduler/
 ├── mcp_server/
 └── tests/
@@ -72,3 +81,38 @@ Out of scope:
 - Scheduler: one-minute reminder scanner
 - API style: JSON over HTTP
 - MCP: tool bridge for Codex, Claude Desktop, Cursor, and ChatGPT Agent
+
+## Backend Quick Start
+
+Step 1 provides a minimal FastAPI application with a health check only. It does not connect to PostgreSQL yet and does not implement `/tasks/*` business APIs yet.
+
+Create a virtual environment and install dependencies:
+
+```bash
+python3 -m venv .venv
+. .venv/bin/activate
+pip install -r time-management-assistant/backend/requirements.txt
+```
+
+Run the API locally:
+
+```bash
+uvicorn app.main:app --reload --app-dir time-management-assistant/backend
+```
+
+Verify:
+
+```bash
+curl http://127.0.0.1:8000/health
+```
+
+Expected response:
+
+```json
+{
+  "status": "ok",
+  "service": "Time Management Assistant API",
+  "environment": "development",
+  "timezone": "Asia/Shanghai"
+}
+```
