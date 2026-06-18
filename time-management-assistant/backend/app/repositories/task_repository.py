@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Any, Optional
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select, or_, select
 from sqlalchemy.orm import Session
 
 from app.models import Task
@@ -36,7 +36,7 @@ class TaskRepository:
         if query:
             pattern = f"%{query}%"
             statement = statement.where(
-                Task.title.ilike(pattern) | Task.description.ilike(pattern)
+                or_(Task.title.ilike(pattern), Task.description.ilike(pattern))
             )
         if status:
             statement = statement.where(Task.status == status)
