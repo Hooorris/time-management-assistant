@@ -190,6 +190,18 @@ When Bark sending succeeds, the worker sets `reminders.status=sent`, stores `sen
 
 For remote development, keep the PostgreSQL SSH tunnel open before starting the worker.
 
+## Local Runtime Helpers
+
+Keep local-only tunnel and database values in `time-management-assistant/backend/.env`; this file is ignored by Git. The helper below reads `SSH_TUNNEL_*` values from that file and does not require secrets in command arguments:
+
+```bash
+python time-management-assistant/scripts/db_tunnel.py start
+python time-management-assistant/scripts/db_tunnel.py status
+python time-management-assistant/scripts/db_tunnel.py stop
+```
+
+Use `start` before running tests, the API, MCP server, Agent CLI, or scheduler against the remote PostgreSQL database.
+
 ## MCP Server
 
 The MCP server exposes the same task capabilities as local tools for Codex, Claude Desktop, Cursor, ChatGPT Agent, and other MCP clients. Step 7 uses local `stdio` transport only and does not implement HTTP or SSE transports yet.

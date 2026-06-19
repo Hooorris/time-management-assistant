@@ -209,6 +209,18 @@ Bark 发送成功时，worker 会设置 `reminders.status=sent`、写入 `sent_a
 
 远程开发时，运行 scheduler 前需要先保持 PostgreSQL SSH 隧道开启。
 
+## 本地运行助手
+
+本地隧道和数据库真实配置放在 `time-management-assistant/backend/.env`，该文件已被 Git 忽略。下面的助手脚本会读取 `.env` 中的 `SSH_TUNNEL_*` 配置，不需要把密钥写到命令参数里：
+
+```bash
+python time-management-assistant/scripts/db_tunnel.py start
+python time-management-assistant/scripts/db_tunnel.py status
+python time-management-assistant/scripts/db_tunnel.py stop
+```
+
+连接远程 PostgreSQL 跑测试、API、MCP Server、Agent CLI 或 Scheduler 前，先执行 `start`。
+
 ## MCP Server
 
 MCP Server 会把现有任务能力暴露为本地工具，供 Codex、Claude Desktop、Cursor、ChatGPT Agent 和其他 MCP 客户端调用。Step 7 只实现本地 `stdio` transport，暂不实现 HTTP 或 SSE transport。
