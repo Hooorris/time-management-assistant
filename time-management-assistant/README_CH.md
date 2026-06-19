@@ -1,11 +1,11 @@
 # 时间管理助手
 
-个人时间管理 AI Agent 工程。当前阶段已经完成 Agent 规范、FastAPI 后端、PostgreSQL 连接层、核心业务 API、Scheduler，以及本地 MCP Server；后续会继续实现自然语言 Agent 和测试完善。
+个人时间管理 AI Agent 工程。当前阶段已经完成 Agent 规范、FastAPI 后端、PostgreSQL 连接层、核心业务 API、Scheduler、本地 MCP Server，以及本地自然语言 Agent CLI；后续会继续升级 LLM Agent 和测试完善。
 
 ## 项目状态
 
 版本：v1.0
-状态：MCP Server 已完成
+状态：本地 Agent CLI 已完成
 负责人：hsx
 
 ## 项目目标
@@ -38,6 +38,7 @@ time-management-assistant/
 │   └── requirements.txt
 ├── scheduler/
 ├── mcp_server/
+├── agent/
 └── tests/
 ```
 
@@ -239,3 +240,36 @@ check_reminders
 ```
 
 `delete_task` 必须在 Agent 或客户端已经向用户确认删除后才能调用。`check_reminders` 当前只会把到期提醒标记为已发送，不会真正发送 Telegram、Email、Bark、企业微信或钉钉通知。
+
+## 本地 Agent CLI
+
+Step 8 新增本地规则版自然语言 Agent。当前不调用 LLM，只解析常见中文日程指令，然后调用现有 service 层完成操作。
+
+执行单条指令：
+
+```bash
+python time-management-assistant/agent/cli.py once "明天下午3点提醒我写周报"
+```
+
+启动交互模式：
+
+```bash
+python time-management-assistant/agent/cli.py chat
+```
+
+支持示例：
+
+```text
+明天下午3点提醒我写周报
+今天有什么安排
+把健身改到明天早上8点
+取消周五下午会议
+周报完成了
+每天早上8点学习英语
+每日总结
+检查提醒
+```
+
+删除指令会进入交互确认：CLI 会先展示匹配任务，只有输入 `yes` 后才会删除。
+
+Step 9 会把规则解析器升级为 LLM Agent，同时继续复用当前 service、API、Scheduler 和 MCP 层。详见 `docs/STEP9_LLM_AGENT_PLAN.md`。

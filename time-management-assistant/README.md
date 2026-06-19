@@ -1,11 +1,11 @@
 # Time Management Assistant
 
-个人时间管理 AI Agent 工程。当前阶段已经完成 Agent 规范、FastAPI 后端、PostgreSQL 连接层、核心业务 API、Scheduler，以及本地 MCP Server；后续会继续实现自然语言 Agent 和测试完善。
+个人时间管理 AI Agent 工程。当前阶段已经完成 Agent 规范、FastAPI 后端、PostgreSQL 连接层、核心业务 API、Scheduler、本地 MCP Server，以及本地自然语言 Agent CLI；后续会继续升级 LLM Agent 和测试完善。
 
 ## Status
 
 Version: v1.0
-Status: MCP Server Implemented
+Status: Local Agent CLI Implemented
 Owner: hsx
 
 ## Goal
@@ -37,6 +37,7 @@ time-management-assistant/
 │   └── requirements.txt
 ├── scheduler/
 ├── mcp_server/
+├── agent/
 └── tests/
 ```
 
@@ -220,3 +221,36 @@ check_reminders
 ```
 
 `delete_task` must only be called after the Agent or client has already confirmed the destructive action with the user. `check_reminders` marks due reminders as sent but does not send real Telegram, Email, Bark, WeChat Work, or DingTalk notifications yet.
+
+## Local Agent CLI
+
+Step 8 adds a local rule-based natural-language Agent. It does not call an LLM yet. The CLI parses common Chinese schedule commands, then calls the existing service layer.
+
+Run one command:
+
+```bash
+python time-management-assistant/agent/cli.py once "明天下午3点提醒我写周报"
+```
+
+Start interactive mode:
+
+```bash
+python time-management-assistant/agent/cli.py chat
+```
+
+Supported examples:
+
+```text
+明天下午3点提醒我写周报
+今天有什么安排
+把健身改到明天早上8点
+取消周五下午会议
+周报完成了
+每天早上8点学习英语
+每日总结
+检查提醒
+```
+
+Delete commands are interactive: the CLI first shows the matched task and only deletes after you type `yes`.
+
+Step 9 will upgrade the parser to an LLM-assisted Agent while keeping the same service, API, Scheduler, and MCP layers. See `docs/STEP9_LLM_AGENT_PLAN.md`.
