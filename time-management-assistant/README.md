@@ -149,3 +149,30 @@ Expected response:
   "database": "time_management_assistant"
 }
 ```
+
+## Scheduler
+
+The scheduler is a standalone worker that scans due reminders and marks them as sent. Step 6 uses mock notification behavior: due reminders are logged to stdout, but no Telegram, Email, or Bark message is sent yet.
+
+Run a one-time scan:
+
+```bash
+SCHEDULER_RUN_ONCE=true python time-management-assistant/scheduler/worker.py
+```
+
+Run continuously:
+
+```bash
+python time-management-assistant/scheduler/worker.py
+```
+
+Configuration is read from environment variables or `time-management-assistant/backend/.env`:
+
+```text
+SCHEDULER_INTERVAL_SECONDS=60
+SCHEDULER_CHANNELS=telegram
+SCHEDULER_RUN_ONCE=false
+SCHEDULER_LOG_LEVEL=INFO
+```
+
+For remote development, keep the PostgreSQL SSH tunnel open before starting the worker.

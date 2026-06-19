@@ -166,3 +166,32 @@ curl http://127.0.0.1:8000/health/db
 - `tasks`
 - `operation_logs`
 - `reminders`
+
+## Scheduler
+
+Scheduler 是独立运行的提醒扫描 worker，会定期查找已到期的 reminder，并调用现有 service 将 reminder 标记为 `sent`、将关联 task 标记为 `reminded=true`。
+
+当前 Step 6 只做 mock 通知：到期提醒会输出到日志，不会真正发送 Telegram、Email 或 Bark。
+
+执行一次扫描：
+
+```bash
+SCHEDULER_RUN_ONCE=true python time-management-assistant/scheduler/worker.py
+```
+
+持续运行：
+
+```bash
+python time-management-assistant/scheduler/worker.py
+```
+
+可配置环境变量：
+
+```text
+SCHEDULER_INTERVAL_SECONDS=60
+SCHEDULER_CHANNELS=telegram
+SCHEDULER_RUN_ONCE=false
+SCHEDULER_LOG_LEVEL=INFO
+```
+
+远程开发时，运行 scheduler 前需要先保持 PostgreSQL SSH 隧道开启。
