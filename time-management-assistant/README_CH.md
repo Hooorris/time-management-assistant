@@ -293,3 +293,27 @@ OPENAI_API_KEY=<your-openai-api-key>
 删除指令会进入交互确认：CLI 会先展示匹配任务，只有输入 `yes` 后才会删除。
 
 LLM parser 只负责抽取结构化意图和参数。所有数据库读写仍然通过 `TaskService`，删除指令仍然必须交互确认。
+
+## 测试
+
+Step 10 新增自动化测试，覆盖规则解析器、LLM parser、service 层、HTTP API、MCP tools 注册、scheduler 扫描和 Agent runner。
+
+安装测试依赖：
+
+```bash
+pip install -r time-management-assistant/backend/requirements.txt
+```
+
+运行静态检查：
+
+```bash
+python -m py_compile $(find time-management-assistant/backend/app time-management-assistant/scheduler time-management-assistant/mcp_server time-management-assistant/agent -name '*.py' -print)
+```
+
+运行测试：
+
+```bash
+pytest time-management-assistant/tests
+```
+
+集成测试需要配置 `DATABASE_URL`。远程开发时，运行 pytest 前需要先保持 PostgreSQL SSH 隧道开启。

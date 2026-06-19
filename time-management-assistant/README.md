@@ -274,3 +274,27 @@ Supported examples:
 Delete commands are interactive: the CLI first shows the matched task and only deletes after you type `yes`.
 
 The LLM parser only extracts structured intent and arguments. All database reads and writes still go through `TaskService`, and delete commands still require interactive confirmation.
+
+## Tests
+
+Step 10 adds automated tests for the parser, LLM parser, service layer, HTTP API, MCP tool registration, scheduler scan, and Agent runner.
+
+Install test dependencies:
+
+```bash
+pip install -r time-management-assistant/backend/requirements.txt
+```
+
+Run static checks:
+
+```bash
+python -m py_compile $(find time-management-assistant/backend/app time-management-assistant/scheduler time-management-assistant/mcp_server time-management-assistant/agent -name '*.py' -print)
+```
+
+Run tests:
+
+```bash
+pytest time-management-assistant/tests
+```
+
+Integration tests require `DATABASE_URL`. For remote development, keep the PostgreSQL SSH tunnel open before running pytest.
