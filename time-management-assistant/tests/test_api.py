@@ -13,21 +13,22 @@ def test_task_http_api_flow(db_session, unique_title: str) -> None:
 
     app.dependency_overrides[get_db] = override_get_db
     client = TestClient(app)
-    now = datetime.now(ZoneInfo("Asia/Shanghai"))
+    scheduled_at = datetime.now(ZoneInfo("Asia/Shanghai")) + timedelta(hours=1)
+    scheduled_date = scheduled_at.date().isoformat()
     try:
         create_response = client.post(
             "/tasks/create",
             json={
                 "title": unique_title,
                 "user_command": "pytest api create",
-                "start_time": (now + timedelta(hours=1)).isoformat(),
-                "reminder_time": (now + timedelta(hours=1)).isoformat(),
+                "start_time": scheduled_at.isoformat(),
+                "reminder_time": scheduled_at.isoformat(),
             },
         )
         assert create_response.status_code == 200
         task_id = create_response.json()["task_id"]
 
-        query_response = client.get("/tasks/query", params={"date": now.date().isoformat(), "query": unique_title})
+        query_response = client.get("/tasks/query", params={"date": scheduled_date, "query": unique_title})
         assert query_response.status_code == 200
         assert len(query_response.json()["tasks"]) == 1
 
@@ -51,7 +52,7 @@ def test_task_http_api_flow(db_session, unique_title: str) -> None:
 
         summary_response = client.post(
             "/summary/daily",
-            json={"date": now.date().isoformat(), "timezone": "Asia/Shanghai"},
+            json={"date": scheduled_date, "timezone": "Asia/Shanghai"},
         )
         assert summary_response.status_code == 200
 

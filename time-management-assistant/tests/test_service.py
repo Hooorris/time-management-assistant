@@ -5,7 +5,7 @@ from app.services import TaskService
 
 
 def test_task_service_crud_summary_and_reminders(db_session, unique_title: str) -> None:
-    service = TaskService(db_session)
+    service = TaskService(db_session, default_reminder_channel="bark")
     now = datetime.now(ZoneInfo("Asia/Shanghai"))
 
     created = service.create_task(
