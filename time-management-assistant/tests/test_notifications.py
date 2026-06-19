@@ -1,6 +1,6 @@
 import httpx
 
-from notifications import BarkNotifier, NotificationMessage
+from notifications import BarkNotifier, CCConnectNotifier, NotificationMessage
 from notifications.factory import CompositeNotifier, DryRunNotifier, create_notifier_from_env
 
 
@@ -62,6 +62,65 @@ def test_notification_disabled_uses_dry_run_without_http(monkeypatch) -> None:
     assert result.success is True
 
 
+def test_notification_disabled_does_not_run_cc_connect(monkeypatch) -> None:
+    def fail_if_called(*args, **kwargs):
+        raise AssertionError("cc-connect should not run when notifications are disabled.")
+
+    monkeypatch.setattr("notifications.cc_connect.subprocess.run", fail_if_called)
+    notifier = create_notifier_from_env(
+        {"NOTIFICATION_ENABLED": "false", "NOTIFICATION_CHANNELS": "wechat_work"}
+    )
+
+    result = notifier.send(
+        NotificationMessage(channel="wechat_work", title="Test title", body="Test body")
+    )
+
+    assert isinstance(notifier, DryRunNotifier)
+    assert result.success is True
+
+
+def test_cc_connect_notifier_success(monkeypatch) -> None:
+    calls = []
+
+    def fake_run(args, **kwargs):
+        calls.append((args, kwargs))
+        return type("Result", (), {"returncode": 0, "stdout": "sent\n", "stderr": ""})()
+
+    monkeypatch.setattr("notifications.cc_connect.subprocess.run", fake_run)
+    notifier = CCConnectNotifier(project="my-project")
+
+    result = notifier.send(
+        NotificationMessage(channel="wechat_work", title="Test title", body="Test body")
+    )
+
+    assert result.success is True
+    assert result.status_code == 0
+    assert calls[0][0] == [
+        "cc-connect",
+        "send",
+        "-p",
+        "my-project",
+        "-m",
+        "Test title\n\nTest body",
+    ]
+
+
+def test_cc_connect_notifier_failure_returns_error(monkeypatch) -> None:
+    def fake_run(args, **kwargs):
+        return type("Result", (), {"returncode": 2, "stdout": "", "stderr": "boom"})()
+
+    monkeypatch.setattr("notifications.cc_connect.subprocess.run", fake_run)
+    notifier = CCConnectNotifier(project="my-project")
+
+    result = notifier.send(
+        NotificationMessage(channel="wechat_work", title="Test title", body="Test body")
+    )
+
+    assert result.success is False
+    assert result.status_code == 2
+    assert "boom" in result.error_message
+
+
 def test_factory_creates_bark_notifier_from_env() -> None:
     notifier = create_notifier_from_env(
         {
@@ -76,3 +135,16 @@ def test_factory_creates_bark_notifier_from_env() -> None:
 
     assert isinstance(notifier, CompositeNotifier)
     assert "bark" in notifier.notifiers
+
+
+def test_factory_creates_cc_connect_notifier_from_env() -> None:
+    notifier = create_notifier_from_env(
+        {
+            "NOTIFICATION_ENABLED": "true",
+            "NOTIFICATION_CHANNELS": "wechat_work",
+            "CC_CONNECT_PROJECT": "my-project",
+        }
+    )
+
+    assert isinstance(notifier, CompositeNotifier)
+    assert "wechat_work" in notifier.notifiers

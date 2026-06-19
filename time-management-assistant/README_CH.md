@@ -172,7 +172,7 @@ curl http://127.0.0.1:8000/health/db
 
 ## Scheduler
 
-Scheduler 是独立运行的提醒扫描 worker，会定期查找已到期的 reminder，并发送通知。Step 11 新增 Bark 通道，适合个人设备做真实推送。
+Scheduler 是独立运行的提醒扫描 worker，会定期查找已到期的 reminder，并发送通知。当前支持 Bark 和 cc-connect，用于个人设备真实推送。
 
 HTTP、MCP 和 Agent 的 `check_reminders` 仍保持原来的 mock 行为，不会触发真实通知，避免聊天查询时误发提醒。真实通知只由 Scheduler worker 执行。
 
@@ -201,11 +201,20 @@ BARK_SERVER_URL=https://api.day.app
 BARK_DEVICE_KEY=<your-bark-key>
 BARK_SOUND=bell
 BARK_GROUP=Time Management Assistant
+CC_CONNECT_PROJECT=my-project
+CC_CONNECT_COMMAND=cc-connect
+CC_CONNECT_TIMEOUT_SECONDS=30
 ```
 
-`NOTIFICATION_ENABLED=false` 是安全默认值。dry-run 模式不会发起真实 HTTP 请求，但会把到期 reminder 当作处理成功，方便本地调试。只有在需要真实推送的机器上设置 `NOTIFICATION_ENABLED=true` 并填写 `BARK_DEVICE_KEY`。`.env`、数据库密码和 Bark key 只保存在本地，不能提交到 Git。
+`NOTIFICATION_ENABLED=false` 是安全默认值。dry-run 模式不会发起真实 HTTP 请求，也不会执行 `cc-connect`，但会把到期 reminder 当作处理成功，方便本地调试。
 
-Bark 发送成功时，worker 会设置 `reminders.status=sent`、写入 `sent_at`，并把关联 task 标记为 `reminded=true`。发送失败时，worker 会设置 `reminders.status=failed` 和错误信息，关联 task 不会被标记为已提醒。已经是 `sent` 或 `failed` 的 reminder 不会重复发送。
+如果使用 Bark，在真实推送机器上设置 `NOTIFICATION_ENABLED=true`、`NOTIFICATION_CHANNELS=bark`，并填写 `BARK_DEVICE_KEY`。
+
+如果使用 cc-connect，设置 `NOTIFICATION_ENABLED=true`、`NOTIFICATION_CHANNELS=wechat_work` 和 `CC_CONNECT_PROJECT`。数据库已经支持 `wechat_work` reminder channel，worker 会把这个通道映射到 `cc-connect send -p <project> -m <message>`，不需要修改数据库 schema。
+
+`.env`、数据库密码、Bark key 和 cc-connect 本地凭据只保存在本地，不能提交到 Git。
+
+通知发送成功时，worker 会设置 `reminders.status=sent`、写入 `sent_at`，并把关联 task 标记为 `reminded=true`。发送失败时，worker 会设置 `reminders.status=failed` 和错误信息，关联 task 不会被标记为已提醒。已经是 `sent` 或 `failed` 的 reminder 不会重复发送。
 
 远程开发时，运行 scheduler 前需要先保持 PostgreSQL SSH 隧道开启。
 

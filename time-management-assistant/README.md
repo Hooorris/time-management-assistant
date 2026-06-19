@@ -155,7 +155,7 @@ Expected response:
 
 ## Scheduler
 
-The scheduler is a standalone worker that scans due reminders and sends notifications. Step 11 adds the Bark channel for real personal push notifications. HTTP, MCP, and Agent `check_reminders` still keep the previous mock behavior and do not send real notifications.
+The scheduler is a standalone worker that scans due reminders and sends notifications. It supports Bark and cc-connect for personal push notifications. HTTP, MCP, and Agent `check_reminders` still keep the previous mock behavior and do not send real notifications.
 
 Run a one-time scan:
 
@@ -182,11 +182,20 @@ BARK_SERVER_URL=https://api.day.app
 BARK_DEVICE_KEY=<your-bark-key>
 BARK_SOUND=bell
 BARK_GROUP=Time Management Assistant
+CC_CONNECT_PROJECT=my-project
+CC_CONNECT_COMMAND=cc-connect
+CC_CONNECT_TIMEOUT_SECONDS=30
 ```
 
-`NOTIFICATION_ENABLED=false` is the safe default. In this dry-run mode the worker does not make any real HTTP request; due reminders are treated as successfully handled so local scans remain easy to test. Set `NOTIFICATION_ENABLED=true` and `BARK_DEVICE_KEY` only on the machine that should actually send Bark pushes. Keep `.env`, database passwords, and Bark keys local; never commit them to Git.
+`NOTIFICATION_ENABLED=false` is the safe default. In this dry-run mode the worker does not make any real HTTP request or run `cc-connect`; due reminders are treated as successfully handled so local scans remain easy to test.
 
-When Bark sending succeeds, the worker sets `reminders.status=sent`, stores `sent_at`, and marks the related task as `reminded=true`. When sending fails, the worker sets `reminders.status=failed` with the error message and leaves the task unreminded. Reminders already marked `sent` or `failed` are not sent again.
+To send through Bark, set `NOTIFICATION_ENABLED=true`, `NOTIFICATION_CHANNELS=bark`, and `BARK_DEVICE_KEY` only on the machine that should actually push notifications.
+
+To send through cc-connect, set `NOTIFICATION_ENABLED=true`, `NOTIFICATION_CHANNELS=wechat_work`, and `CC_CONNECT_PROJECT`. The database already supports the `wechat_work` reminder channel, and the worker maps that channel to `cc-connect send -p <project> -m <message>` without changing the database schema.
+
+Keep `.env`, database passwords, Bark keys, and any cc-connect local credentials out of Git.
+
+When notification sending succeeds, the worker sets `reminders.status=sent`, stores `sent_at`, and marks the related task as `reminded=true`. When sending fails, the worker sets `reminders.status=failed` with the error message and leaves the task unreminded. Reminders already marked `sent` or `failed` are not sent again.
 
 For remote development, keep the PostgreSQL SSH tunnel open before starting the worker.
 

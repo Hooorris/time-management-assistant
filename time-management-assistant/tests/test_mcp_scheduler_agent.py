@@ -38,7 +38,7 @@ def test_scheduler_run_once_marks_due_reminder(db_session, unique_title: str, mo
 
     monkeypatch.setattr(worker, "get_session_local", lambda: SessionFactory())
 
-    service = TaskService(db_session)
+    service = TaskService(db_session, default_reminder_channel="bark")
     now = datetime.now(ZoneInfo("Asia/Shanghai"))
     service.create_task(
         title=unique_title,
@@ -158,6 +158,59 @@ def test_scheduler_marks_failed_when_bark_fails(db_session, unique_title: str, m
     assert len(notifier.calls) == 1
 
     assert worker.run_once(channels=["bark"], notifier=notifier)["count"] == 0
+    assert len(notifier.calls) == 1
+
+
+def test_scheduler_sends_wechat_work_and_marks_sent(
+    db_session, unique_title: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class SessionFactory:
+        def __call__(self):
+            return db_session
+
+    class FakeNotifier:
+        def __init__(self):
+            self.calls = []
+
+        def send(self, message):
+            self.calls.append(message)
+            return NotificationResult(success=True, channel=message.channel)
+
+    monkeypatch.setattr(worker, "get_session_local", lambda: SessionFactory())
+
+    now = datetime.now(ZoneInfo("Asia/Shanghai"))
+    task = Task(
+        title=unique_title,
+        start_time=now - timedelta(minutes=10),
+        reminder_time=now - timedelta(minutes=5),
+        reminded=False,
+    )
+    db_session.add(task)
+    db_session.flush()
+    reminder = Reminder(
+        task_id=task.id,
+        send_time=now - timedelta(minutes=5),
+        channel="wechat_work",
+    )
+    db_session.add(reminder)
+    db_session.flush()
+    task_id = task.id
+    reminder_id = reminder.id
+    db_session.commit()
+
+    notifier = FakeNotifier()
+    result = worker.run_once(channels=["wechat_work"], notifier=notifier)
+    updated_task = db_session.get(Task, task_id)
+    updated_reminder = db_session.get(Reminder, reminder_id)
+
+    assert result["count"] == 1
+    assert result["sent_count"] == 1
+    assert updated_reminder.status == "sent"
+    assert updated_task.reminded is True
+    assert len(notifier.calls) == 1
+    assert notifier.calls[0].channel == "wechat_work"
+
+    assert worker.run_once(channels=["wechat_work"], notifier=notifier)["count"] == 0
     assert len(notifier.calls) == 1
 
 
