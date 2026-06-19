@@ -26,10 +26,10 @@ def test_task_service_crud_summary_and_reminders(db_session, unique_title: str) 
     )
     assert updated["task"]["priority"] == "high"
 
-    reminder_scan = service.check_reminders(now=now.isoformat(), channels=["telegram"], user_command="pytest reminders")
+    reminder_scan = service.check_reminders(now=now.isoformat(), channels=["bark"], user_command="pytest reminders")
     assert reminder_scan["count"] == 1
 
-    duplicate_scan = service.check_reminders(now=now.isoformat(), channels=["telegram"], user_command="pytest reminders")
+    duplicate_scan = service.check_reminders(now=now.isoformat(), channels=["bark"], user_command="pytest reminders")
     assert duplicate_scan["count"] == 0
 
     completed = service.complete_task(task_id=task_id, user_command="pytest complete")

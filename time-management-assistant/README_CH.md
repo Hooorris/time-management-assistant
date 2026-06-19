@@ -172,9 +172,9 @@ curl http://127.0.0.1:8000/health/db
 
 ## Scheduler
 
-Scheduler 是独立运行的提醒扫描 worker，会定期查找已到期的 reminder，并调用现有 service 将 reminder 标记为 `sent`、将关联 task 标记为 `reminded=true`。
+Scheduler 是独立运行的提醒扫描 worker，会定期查找已到期的 reminder，并发送通知。Step 11 新增 Bark 通道，适合个人设备做真实推送。
 
-当前 Step 6 只做 mock 通知：到期提醒会输出到日志，不会真正发送 Telegram、Email 或 Bark。
+HTTP、MCP 和 Agent 的 `check_reminders` 仍保持原来的 mock 行为，不会触发真实通知，避免聊天查询时误发提醒。真实通知只由 Scheduler worker 执行。
 
 执行一次扫描：
 
@@ -192,10 +192,20 @@ python time-management-assistant/scheduler/worker.py
 
 ```text
 SCHEDULER_INTERVAL_SECONDS=60
-SCHEDULER_CHANNELS=telegram
+SCHEDULER_CHANNELS=bark
 SCHEDULER_RUN_ONCE=false
 SCHEDULER_LOG_LEVEL=INFO
+NOTIFICATION_ENABLED=false
+NOTIFICATION_CHANNELS=bark
+BARK_SERVER_URL=https://api.day.app
+BARK_DEVICE_KEY=<your-bark-key>
+BARK_SOUND=bell
+BARK_GROUP=Time Management Assistant
 ```
+
+`NOTIFICATION_ENABLED=false` 是安全默认值。dry-run 模式不会发起真实 HTTP 请求，但会把到期 reminder 当作处理成功，方便本地调试。只有在需要真实推送的机器上设置 `NOTIFICATION_ENABLED=true` 并填写 `BARK_DEVICE_KEY`。`.env`、数据库密码和 Bark key 只保存在本地，不能提交到 Git。
+
+Bark 发送成功时，worker 会设置 `reminders.status=sent`、写入 `sent_at`，并把关联 task 标记为 `reminded=true`。发送失败时，worker 会设置 `reminders.status=failed` 和错误信息，关联 task 不会被标记为已提醒。已经是 `sent` 或 `failed` 的 reminder 不会重复发送。
 
 远程开发时，运行 scheduler 前需要先保持 PostgreSQL SSH 隧道开启。
 
@@ -239,7 +249,7 @@ daily_summary
 check_reminders
 ```
 
-`delete_task` 必须在 Agent 或客户端已经向用户确认删除后才能调用。`check_reminders` 当前只会把到期提醒标记为已发送，不会真正发送 Telegram、Email、Bark、企业微信或钉钉通知。
+`delete_task` 必须在 Agent 或客户端已经向用户确认删除后才能调用。`check_reminders` 只保留 mock 行为，把到期提醒标记为已发送，但不会真正发送 Telegram、Email、Bark、企业微信或钉钉通知。真实通知只由 Scheduler worker 发送。
 
 ## 本地 Agent CLI
 
@@ -307,7 +317,7 @@ pip install -r time-management-assistant/backend/requirements.txt
 运行静态检查：
 
 ```bash
-python -m py_compile $(find time-management-assistant/backend/app time-management-assistant/scheduler time-management-assistant/mcp_server time-management-assistant/agent -name '*.py' -print)
+python -m py_compile $(find time-management-assistant/backend/app time-management-assistant/scheduler time-management-assistant/mcp_server time-management-assistant/agent time-management-assistant/notifications -name '*.py' -print)
 ```
 
 运行测试：

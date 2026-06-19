@@ -19,6 +19,9 @@ class ReminderRepository:
         self.db.refresh(reminder)
         return reminder
 
+    def get_by_id(self, reminder_id: uuid.UUID) -> Optional[Reminder]:
+        return self.db.get(Reminder, reminder_id)
+
     def list_due(
         self,
         *,

@@ -1,3 +1,4 @@
+import os
 import uuid
 from contextlib import contextmanager
 from datetime import date, datetime, time, timedelta, timezone
@@ -26,9 +27,16 @@ ALLOWED_TASK_UPDATE_FIELDS = {
 
 
 class TaskService:
-    def __init__(self, db: Session, *, timezone_name: str = "Asia/Shanghai") -> None:
+    def __init__(
+        self,
+        db: Session,
+        *,
+        timezone_name: str = "Asia/Shanghai",
+        default_reminder_channel: Optional[str] = None,
+    ) -> None:
         self.db = db
         self.timezone = ZoneInfo(timezone_name)
+        self.default_reminder_channel = default_reminder_channel or self._resolve_default_reminder_channel()
         self.tasks = TaskRepository(db)
         self.logs = OperationLogRepository(db)
         self.reminders = ReminderRepository(db)
@@ -65,7 +73,7 @@ class TaskService:
                 self.reminders.create(
                     task_id=task.id,
                     send_time=resolved_reminder_time,
-                    channel=ReminderChannel.TELEGRAM.value,
+                    channel=self.default_reminder_channel,
                 )
             task_id = str(task.id)
             after = model_to_dict(task)
@@ -211,7 +219,7 @@ class TaskService:
                 self.reminders.create(
                     task_id=task.id,
                     send_time=resolved_reminder_time,
-                    channel=ReminderChannel.TELEGRAM.value,
+                    channel=self.default_reminder_channel,
                 )
             after = model_to_dict(task)
             self.logs.create(
@@ -248,6 +256,62 @@ class TaskService:
                 )
         return {"reminders": after, "count": len(after)}
 
+    def list_due_reminders(
+        self,
+        *,
+        now: Any = None,
+        channels: Optional[list[str]] = None,
+        limit: int = 100,
+    ) -> dict[str, Any]:
+        current_time = self._parse_datetime(now) or datetime.now(timezone.utc)
+        due_reminders = self.reminders.list_due(now=current_time, channels=channels, limit=limit)
+        reminders = [self._reminder_to_dict(reminder) for reminder in due_reminders]
+        return {"reminders": reminders, "count": len(reminders)}
+
+    def mark_reminder_sent(
+        self,
+        *,
+        reminder_id: Any,
+        sent_at: Any = None,
+        user_command: Optional[str] = None,
+    ) -> dict[str, Any]:
+        current_time = self._parse_datetime(sent_at) or datetime.now(timezone.utc)
+        with self._unit_of_work():
+            reminder = self._get_reminder_or_raise(reminder_id)
+            before = model_to_dict(reminder)
+            self.reminders.mark_sent(reminder, sent_at=current_time)
+            task = self.tasks.get_by_id(reminder.task_id)
+            if task:
+                self.tasks.update(task, reminded=True)
+            after = model_to_dict(reminder)
+            self.logs.create(
+                intent=OperationIntent.CHECK_REMINDERS.value,
+                user_command=user_command,
+                before_data={"reminder": before},
+                after_data={"reminder": after},
+            )
+        return {"reminder": after}
+
+    def mark_reminder_failed(
+        self,
+        *,
+        reminder_id: Any,
+        error_message: str,
+        user_command: Optional[str] = None,
+    ) -> dict[str, Any]:
+        with self._unit_of_work():
+            reminder = self._get_reminder_or_raise(reminder_id)
+            before = model_to_dict(reminder)
+            self.reminders.mark_failed(reminder, error_message=error_message[:1000])
+            after = model_to_dict(reminder)
+            self.logs.create(
+                intent=OperationIntent.CHECK_REMINDERS.value,
+                user_command=user_command,
+                before_data={"reminder": before},
+                after_data={"reminder": after},
+            )
+        return {"reminder": after}
+
     def daily_summary(self, *, date_value: Any = None) -> dict[str, Any]:
         schedule = self.query_schedule(date_value=date_value, include_done=True)
         tasks = schedule["tasks"]
@@ -265,6 +329,12 @@ class TaskService:
         if not task:
             raise NotFoundError("Task not found.")
         return task
+
+    def _get_reminder_or_raise(self, reminder_id: Any):
+        reminder = self.reminders.get_by_id(self._parse_uuid(reminder_id))
+        if not reminder:
+            raise NotFoundError("Reminder not found.")
+        return reminder
 
     @contextmanager
     def _unit_of_work(self) -> Iterator[None]:
@@ -332,3 +402,18 @@ class TaskService:
         if isinstance(value, uuid.UUID):
             return value
         return uuid.UUID(str(value))
+
+    def _resolve_default_reminder_channel(self) -> str:
+        raw_channels = os.getenv("NOTIFICATION_CHANNELS", ReminderChannel.BARK.value)
+        channels = [item.strip().lower() for item in raw_channels.split(",") if item.strip()]
+        allowed_channels = {channel.value for channel in ReminderChannel}
+        for channel in channels:
+            if channel in allowed_channels:
+                return channel
+        return ReminderChannel.BARK.value
+
+    def _reminder_to_dict(self, reminder: Any) -> dict[str, Any]:
+        reminder_data = model_to_dict(reminder)
+        if reminder.task:
+            reminder_data["task"] = model_to_dict(reminder.task)
+        return reminder_data

@@ -155,7 +155,7 @@ Expected response:
 
 ## Scheduler
 
-The scheduler is a standalone worker that scans due reminders and marks them as sent. Step 6 uses mock notification behavior: due reminders are logged to stdout, but no Telegram, Email, or Bark message is sent yet.
+The scheduler is a standalone worker that scans due reminders and sends notifications. Step 11 adds the Bark channel for real personal push notifications. HTTP, MCP, and Agent `check_reminders` still keep the previous mock behavior and do not send real notifications.
 
 Run a one-time scan:
 
@@ -173,10 +173,20 @@ Configuration is read from environment variables or `time-management-assistant/b
 
 ```text
 SCHEDULER_INTERVAL_SECONDS=60
-SCHEDULER_CHANNELS=telegram
+SCHEDULER_CHANNELS=bark
 SCHEDULER_RUN_ONCE=false
 SCHEDULER_LOG_LEVEL=INFO
+NOTIFICATION_ENABLED=false
+NOTIFICATION_CHANNELS=bark
+BARK_SERVER_URL=https://api.day.app
+BARK_DEVICE_KEY=<your-bark-key>
+BARK_SOUND=bell
+BARK_GROUP=Time Management Assistant
 ```
+
+`NOTIFICATION_ENABLED=false` is the safe default. In this dry-run mode the worker does not make any real HTTP request; due reminders are treated as successfully handled so local scans remain easy to test. Set `NOTIFICATION_ENABLED=true` and `BARK_DEVICE_KEY` only on the machine that should actually send Bark pushes. Keep `.env`, database passwords, and Bark keys local; never commit them to Git.
+
+When Bark sending succeeds, the worker sets `reminders.status=sent`, stores `sent_at`, and marks the related task as `reminded=true`. When sending fails, the worker sets `reminders.status=failed` with the error message and leaves the task unreminded. Reminders already marked `sent` or `failed` are not sent again.
 
 For remote development, keep the PostgreSQL SSH tunnel open before starting the worker.
 
@@ -220,7 +230,7 @@ daily_summary
 check_reminders
 ```
 
-`delete_task` must only be called after the Agent or client has already confirmed the destructive action with the user. `check_reminders` marks due reminders as sent but does not send real Telegram, Email, Bark, WeChat Work, or DingTalk notifications yet.
+`delete_task` must only be called after the Agent or client has already confirmed the destructive action with the user. `check_reminders` marks due reminders as sent with mock behavior and does not send real Telegram, Email, Bark, WeChat Work, or DingTalk notifications. Real notifications are only sent by the scheduler worker.
 
 ## Local Agent CLI
 
@@ -288,7 +298,7 @@ pip install -r time-management-assistant/backend/requirements.txt
 Run static checks:
 
 ```bash
-python -m py_compile $(find time-management-assistant/backend/app time-management-assistant/scheduler time-management-assistant/mcp_server time-management-assistant/agent -name '*.py' -print)
+python -m py_compile $(find time-management-assistant/backend/app time-management-assistant/scheduler time-management-assistant/mcp_server time-management-assistant/agent time-management-assistant/notifications -name '*.py' -print)
 ```
 
 Run tests:
