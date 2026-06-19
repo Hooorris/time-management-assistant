@@ -221,6 +221,18 @@ python time-management-assistant/scripts/db_tunnel.py stop
 
 连接远程 PostgreSQL 跑测试、API、MCP Server、Agent CLI 或 Scheduler 前，先执行 `start`。
 
+如果要在 macOS 本机无人值守运行，可以安装 LaunchAgent，分别保活数据库隧道和 Scheduler：
+
+```bash
+python time-management-assistant/scripts/launchd.py install
+python time-management-assistant/scripts/launchd.py status
+python time-management-assistant/scripts/launchd.py uninstall
+```
+
+生成的 plist 位于 `~/Library/LaunchAgents`，日志位于 `~/Library/Logs/time-management-assistant`。plist 不包含 SSH、数据库或 Bark 密钥；运行时密钥仍只保存在已忽略的 `backend/.env`。
+
+`install` 会立即启动 Scheduler。默认要求 `NOTIFICATION_ENABLED=true`，避免 dry-run 模式静默把到期提醒标记为已发送。如果是有意做 dry-run 守护测试，可以加 `--allow-dry-run-scheduler`。
+
 ## MCP Server
 
 MCP Server 会把现有任务能力暴露为本地工具，供 Codex、Claude Desktop、Cursor、ChatGPT Agent 和其他 MCP 客户端调用。Step 7 只实现本地 `stdio` transport，暂不实现 HTTP 或 SSE transport。

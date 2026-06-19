@@ -202,6 +202,18 @@ python time-management-assistant/scripts/db_tunnel.py stop
 
 Use `start` before running tests, the API, MCP server, Agent CLI, or scheduler against the remote PostgreSQL database.
 
+For unattended local running on macOS, install LaunchAgents for the database tunnel and scheduler:
+
+```bash
+python time-management-assistant/scripts/launchd.py install
+python time-management-assistant/scripts/launchd.py status
+python time-management-assistant/scripts/launchd.py uninstall
+```
+
+The generated LaunchAgent plists live in `~/Library/LaunchAgents`, and logs live in `~/Library/Logs/time-management-assistant`. The plists do not contain SSH, database, or Bark secrets; runtime secrets stay in the ignored `backend/.env`.
+
+`install` starts the scheduler immediately. By default it requires `NOTIFICATION_ENABLED=true` so due reminders are not silently marked sent in dry-run mode. For deliberate dry-run daemon testing, pass `--allow-dry-run-scheduler`.
+
 ## MCP Server
 
 The MCP server exposes the same task capabilities as local tools for Codex, Claude Desktop, Cursor, ChatGPT Agent, and other MCP clients. Step 7 uses local `stdio` transport only and does not implement HTTP or SSE transports yet.

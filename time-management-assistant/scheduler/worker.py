@@ -161,7 +161,12 @@ def main() -> int:
     )
 
     while not shutdown_requested:
-        run_once(channels=channels)
+        try:
+            run_once(channels=channels)
+        except Exception:
+            logger.exception("Reminder scan failed")
+            if run_once_only:
+                return 1
         if run_once_only:
             break
         time.sleep(interval_seconds)
