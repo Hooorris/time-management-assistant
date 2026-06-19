@@ -238,7 +238,7 @@ python time-management-assistant/scripts/launchd.py status
 python time-management-assistant/scripts/launchd.py uninstall
 ```
 
-生成的 plist 位于 `~/Library/LaunchAgents`，日志位于 `~/Library/Logs/time-management-assistant`。plist 不包含 SSH、数据库或 Bark 密钥；运行时密钥仍只保存在已忽略的 `backend/.env`。
+生成的 plist 位于 `~/Library/LaunchAgents`，日志位于 `~/Library/Logs/time-management-assistant`。plist 不包含 SSH、数据库、Bark 或 cc-connect 密钥；运行时密钥仍只保存在已忽略的 `backend/.env`。
 
 `install` 会立即启动 Scheduler。默认要求 `NOTIFICATION_ENABLED=true`，避免 dry-run 模式静默把到期提醒标记为已发送。如果是有意做 dry-run 守护测试，可以加 `--allow-dry-run-scheduler`。
 

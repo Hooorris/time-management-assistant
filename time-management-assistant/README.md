@@ -219,7 +219,7 @@ python time-management-assistant/scripts/launchd.py status
 python time-management-assistant/scripts/launchd.py uninstall
 ```
 
-The generated LaunchAgent plists live in `~/Library/LaunchAgents`, and logs live in `~/Library/Logs/time-management-assistant`. The plists do not contain SSH, database, or Bark secrets; runtime secrets stay in the ignored `backend/.env`.
+The generated LaunchAgent plists live in `~/Library/LaunchAgents`, and logs live in `~/Library/Logs/time-management-assistant`. The plists do not contain SSH, database, Bark, or cc-connect secrets; runtime secrets stay in the ignored `backend/.env`.
 
 `install` starts the scheduler immediately. By default it requires `NOTIFICATION_ENABLED=true` so due reminders are not silently marked sent in dry-run mode. For deliberate dry-run daemon testing, pass `--allow-dry-run-scheduler`.
 
