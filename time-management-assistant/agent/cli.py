@@ -11,7 +11,7 @@ from agent.runner import AgentRunner  # noqa: E402
 
 
 def run_once(args: argparse.Namespace) -> int:
-    runner = AgentRunner(timezone_name=args.timezone)
+    runner = AgentRunner(timezone_name=args.timezone, parser_mode=args.parser)
     command = " ".join(args.command).strip()
     if not command:
         print("请输入指令。")
@@ -28,7 +28,7 @@ def run_once(args: argparse.Namespace) -> int:
 
 
 def run_chat(args: argparse.Namespace) -> int:
-    runner = AgentRunner(timezone_name=args.timezone)
+    runner = AgentRunner(timezone_name=args.timezone, parser_mode=args.parser)
     print("时间管理助手已启动。输入 exit 或 quit 退出。")
     while True:
         try:
@@ -52,6 +52,7 @@ def run_chat(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Local Time Management Assistant Agent")
     parser.add_argument("--timezone", default="Asia/Shanghai")
+    parser.add_argument("--parser", choices=("auto", "rule", "llm"), default="auto")
     subparsers = parser.add_subparsers(dest="command_name", required=True)
 
     once = subparsers.add_parser("once", help="Run one natural-language command")

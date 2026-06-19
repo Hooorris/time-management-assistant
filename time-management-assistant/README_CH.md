@@ -1,11 +1,11 @@
 # 时间管理助手
 
-个人时间管理 AI Agent 工程。当前阶段已经完成 Agent 规范、FastAPI 后端、PostgreSQL 连接层、核心业务 API、Scheduler、本地 MCP Server，以及本地自然语言 Agent CLI；后续会继续升级 LLM Agent 和测试完善。
+个人时间管理 AI Agent 工程。当前阶段已经完成 Agent 规范、FastAPI 后端、PostgreSQL 连接层、核心业务 API、Scheduler、本地 MCP Server，以及 LLM-assisted 本地 Agent CLI；后续会继续完善测试和通知通道。
 
 ## 项目状态
 
 版本：v1.0
-状态：本地 Agent CLI 已完成
+状态：LLM Agent Parser 已完成
 负责人：hsx
 
 ## 项目目标
@@ -243,7 +243,7 @@ check_reminders
 
 ## 本地 Agent CLI
 
-Step 8 新增本地规则版自然语言 Agent。当前不调用 LLM，只解析常见中文日程指令，然后调用现有 service 层完成操作。
+本地 Agent CLI 会解析中文日程指令，然后调用现有 service 层完成操作。Step 9 新增 LLM-assisted parser，并保留规则解析器作为 fallback。
 
 执行单条指令：
 
@@ -255,6 +255,26 @@ python time-management-assistant/agent/cli.py once "明天下午3点提醒我写
 
 ```bash
 python time-management-assistant/agent/cli.py chat
+```
+
+解析模式：
+
+```bash
+python time-management-assistant/agent/cli.py --parser auto once "明天下午3点提醒我写周报"
+python time-management-assistant/agent/cli.py --parser rule once "明天下午3点提醒我写周报"
+python time-management-assistant/agent/cli.py --parser llm once "明天下午3点提醒我写周报"
+```
+
+`auto` 是默认模式。配置了 `OPENAI_API_KEY` 时优先使用 LLM parser；未配置 key 或 LLM 解析失败时自动回退到规则解析器。
+
+LLM 配置写在 `time-management-assistant/backend/.env`：
+
+```text
+AGENT_LLM_PROVIDER=openai
+AGENT_LLM_MODEL=gpt-5-mini
+AGENT_LLM_TIMEOUT_SECONDS=30
+AGENT_LLM_TEMPERATURE=0
+OPENAI_API_KEY=<your-openai-api-key>
 ```
 
 支持示例：
@@ -272,4 +292,4 @@ python time-management-assistant/agent/cli.py chat
 
 删除指令会进入交互确认：CLI 会先展示匹配任务，只有输入 `yes` 后才会删除。
 
-Step 9 会把规则解析器升级为 LLM Agent，同时继续复用当前 service、API、Scheduler 和 MCP 层。详见 `docs/STEP9_LLM_AGENT_PLAN.md`。
+LLM parser 只负责抽取结构化意图和参数。所有数据库读写仍然通过 `TaskService`，删除指令仍然必须交互确认。

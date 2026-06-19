@@ -16,16 +16,24 @@ load_dotenv(BACKEND_ROOT / ".env")
 from app.database import get_session_local  # noqa: E402
 from app.services import TaskService  # noqa: E402
 
+from agent.llm_parser import LLMCommandParser, LLMParserError
 from agent.parser import ChineseCommandParser, ParsedCommand
 
 
 class AgentRunner:
-    def __init__(self, timezone_name: str = "Asia/Shanghai") -> None:
+    def __init__(
+        self,
+        timezone_name: str = "Asia/Shanghai",
+        *,
+        parser_mode: str = "auto",
+    ) -> None:
         self.timezone_name = timezone_name
-        self.parser = ChineseCommandParser(timezone_name)
+        self.parser_mode = parser_mode
+        self.rule_parser = ChineseCommandParser(timezone_name)
+        self.llm_parser = LLMCommandParser(timezone_name)
 
     def handle_once(self, command: str, *, confirm_delete: bool = False) -> str:
-        parsed = self.parser.parse(command)
+        parsed = self._parse_command(command)
         if parsed.clarification:
             return parsed.clarification
         with self._service_context() as service:
@@ -73,7 +81,7 @@ class AgentRunner:
         return "我还不能处理这条指令。"
 
     def handle_delete_with_prompt(self, command: str) -> str:
-        parsed = self.parser.parse(command)
+        parsed = self._parse_command(command)
         if parsed.clarification:
             return parsed.clarification
         if parsed.intent != "delete_task":
@@ -101,6 +109,20 @@ class AgentRunner:
             yield TaskService(db, timezone_name=self.timezone_name)
         finally:
             db.close()
+
+    def _parse_command(self, command: str) -> ParsedCommand:
+        if self.parser_mode == "rule":
+            return self.rule_parser.parse(command)
+        if self.parser_mode == "llm":
+            return self.llm_parser.parse(command)
+        if self.parser_mode != "auto":
+            raise RuntimeError(f"Unsupported parser mode: {self.parser_mode}")
+        if self.llm_parser.is_available():
+            try:
+                return self.llm_parser.parse(command)
+            except LLMParserError:
+                return self.rule_parser.parse(command)
+        return self.rule_parser.parse(command)
 
     def _handle_update(self, service: TaskService, parsed: ParsedCommand, command: str) -> str:
         matches = self._find_matches(service, parsed, include_done=False)

@@ -1,10 +1,10 @@
-# Step 9: LLM Agent Plan
+# Step 9: LLM Agent Implementation
 
 ## Goal
 
 Upgrade the local rule-based Agent into an LLM-assisted Agent that can understand broader Chinese natural-language schedule commands while continuing to use the same safe service/tool layer.
 
-## Key Changes
+## Implemented Scope
 
 - Add model configuration for provider, model name, API key, temperature, and timeout.
 - Define structured output schemas for intent detection and argument extraction.
@@ -16,16 +16,15 @@ Upgrade the local rule-based Agent into an LLM-assisted Agent that can understan
   - Ask clarification when target task, date, time, or recurrence is ambiguous.
   - Never fabricate task data.
 
-## Implementation Notes
+## Runtime Behavior
 
-- Add an LLM parser that returns the same internal command shape as the Step 8 rule parser.
-- Keep the Step 8 rule parser as a fallback when no API key is configured.
-- Add deterministic tests for schema validation and mocked model responses.
-- Add integration tests that use the same CLI commands through mocked LLM extraction.
+- `--parser auto`: use LLM when `OPENAI_API_KEY` exists, otherwise use the rule parser.
+- `--parser rule`: always use the Step 8 rule parser.
+- `--parser llm`: require LLM parsing and fail clearly if configuration or model output is invalid.
+- Delete commands still require CLI confirmation before any delete call.
 
-## Acceptance Criteria
+## Future Improvements
 
-- Chinese commands with flexible wording can be converted into existing intents.
-- The Agent still refuses destructive operations without confirmation.
-- No database credentials or model secrets are committed.
-- Existing Step 8 CLI commands continue to work.
+- Add broader mocked LLM fixtures for flexible Chinese wording.
+- Add provider adapters for OpenAI-compatible base URLs and Claude.
+- Add an HTTP Agent endpoint after CLI behavior is stable.

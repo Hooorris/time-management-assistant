@@ -1,11 +1,11 @@
 # Time Management Assistant
 
-个人时间管理 AI Agent 工程。当前阶段已经完成 Agent 规范、FastAPI 后端、PostgreSQL 连接层、核心业务 API、Scheduler、本地 MCP Server，以及本地自然语言 Agent CLI；后续会继续升级 LLM Agent 和测试完善。
+个人时间管理 AI Agent 工程。当前阶段已经完成 Agent 规范、FastAPI 后端、PostgreSQL 连接层、核心业务 API、Scheduler、本地 MCP Server，以及 LLM-assisted 本地 Agent CLI；后续会继续完善测试和通知通道。
 
 ## Status
 
 Version: v1.0
-Status: Local Agent CLI Implemented
+Status: LLM Agent Parser Implemented
 Owner: hsx
 
 ## Goal
@@ -224,7 +224,7 @@ check_reminders
 
 ## Local Agent CLI
 
-Step 8 adds a local rule-based natural-language Agent. It does not call an LLM yet. The CLI parses common Chinese schedule commands, then calls the existing service layer.
+The local Agent CLI parses Chinese schedule commands, then calls the existing service layer. Step 9 adds an LLM-assisted parser with rule-parser fallback.
 
 Run one command:
 
@@ -236,6 +236,26 @@ Start interactive mode:
 
 ```bash
 python time-management-assistant/agent/cli.py chat
+```
+
+Parser modes:
+
+```bash
+python time-management-assistant/agent/cli.py --parser auto once "明天下午3点提醒我写周报"
+python time-management-assistant/agent/cli.py --parser rule once "明天下午3点提醒我写周报"
+python time-management-assistant/agent/cli.py --parser llm once "明天下午3点提醒我写周报"
+```
+
+`auto` is the default. It uses the LLM parser when `OPENAI_API_KEY` is configured and falls back to the rule parser when the key is missing or parsing fails.
+
+LLM configuration lives in `time-management-assistant/backend/.env`:
+
+```text
+AGENT_LLM_PROVIDER=openai
+AGENT_LLM_MODEL=gpt-5-mini
+AGENT_LLM_TIMEOUT_SECONDS=30
+AGENT_LLM_TEMPERATURE=0
+OPENAI_API_KEY=<your-openai-api-key>
 ```
 
 Supported examples:
@@ -253,4 +273,4 @@ Supported examples:
 
 Delete commands are interactive: the CLI first shows the matched task and only deletes after you type `yes`.
 
-Step 9 will upgrade the parser to an LLM-assisted Agent while keeping the same service, API, Scheduler, and MCP layers. See `docs/STEP9_LLM_AGENT_PLAN.md`.
+The LLM parser only extracts structured intent and arguments. All database reads and writes still go through `TaskService`, and delete commands still require interactive confirmation.
