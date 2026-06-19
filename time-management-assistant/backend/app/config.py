@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     api_prefix: str = ""
     database_url: str = ""
     database_echo: bool = False
+    mcp_auth_required: bool = True
+    mcp_auth_token: str = ""
 
     model_config = SettingsConfigDict(
         env_file=BACKEND_DIR / ".env",

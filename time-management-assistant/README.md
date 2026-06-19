@@ -1,11 +1,11 @@
 # Time Management Assistant
 
-个人时间管理 AI Agent 工程。当前阶段已经完成 Agent 规范，并初始化了最小 FastAPI 后端骨架；后续会继续实现数据库、业务 API、Scheduler、MCP Server 和测试。
+个人时间管理 AI Agent 工程。当前阶段已经完成 Agent 规范、FastAPI 后端、PostgreSQL 连接层、核心业务 API、Scheduler，以及本地 MCP Server；后续会继续实现自然语言 Agent 和测试完善。
 
 ## Status
 
 Version: v1.0
-Status: Backend Bootstrap
+Status: MCP Server Implemented
 Owner: hsx
 
 ## Goal
@@ -89,10 +89,12 @@ The backend currently provides FastAPI startup, configuration loading, a basic h
 Create a virtual environment and install dependencies:
 
 ```bash
-python3 -m venv .venv
+python3.10 -m venv .venv
 . .venv/bin/activate
 pip install -r time-management-assistant/backend/requirements.txt
 ```
+
+Step 7 adds the official MCP SDK, so the project virtual environment now needs Python 3.10 or newer.
 
 Copy the environment template:
 
@@ -176,3 +178,45 @@ SCHEDULER_LOG_LEVEL=INFO
 ```
 
 For remote development, keep the PostgreSQL SSH tunnel open before starting the worker.
+
+## MCP Server
+
+The MCP server exposes the same task capabilities as local tools for Codex, Claude Desktop, Cursor, ChatGPT Agent, and other MCP clients. Step 7 uses local `stdio` transport only and does not implement HTTP or SSE transports yet.
+
+Install dependencies:
+
+```bash
+. .venv/bin/activate
+pip install -r time-management-assistant/backend/requirements.txt
+```
+
+Set local-only MCP configuration in `time-management-assistant/backend/.env`:
+
+```text
+MCP_AUTH_REQUIRED=true
+MCP_AUTH_TOKEN=<local-mcp-token>
+DATABASE_URL=postgresql+psycopg://time_assistant:<password>@127.0.0.1:5432/time_management_assistant
+```
+
+For remote development, keep the PostgreSQL SSH tunnel open, then start the server:
+
+```bash
+python time-management-assistant/mcp_server/server.py
+```
+
+Available MCP tools:
+
+```text
+create_task
+update_task
+delete_task
+query_task
+list_today_tasks
+query_schedule
+complete_task
+set_recurring_task
+daily_summary
+check_reminders
+```
+
+`delete_task` must only be called after the Agent or client has already confirmed the destructive action with the user. `check_reminders` marks due reminders as sent but does not send real Telegram, Email, Bark, WeChat Work, or DingTalk notifications yet.

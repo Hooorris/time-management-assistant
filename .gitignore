@@ -1,4 +1,6 @@
 .DS_Store
 .venv/
 .env
+__pycache__/
+*.pyc
 time-management-assistant/backend/.env

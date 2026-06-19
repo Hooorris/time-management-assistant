@@ -1,11 +1,11 @@
 # 时间管理助手
 
-个人时间管理 AI Agent 工程。当前阶段已经完成 Agent 规范、最小 FastAPI 后端骨架，以及 PostgreSQL 数据库连接层；后续会继续实现业务 API、Scheduler、MCP Server 和测试。
+个人时间管理 AI Agent 工程。当前阶段已经完成 Agent 规范、FastAPI 后端、PostgreSQL 连接层、核心业务 API、Scheduler，以及本地 MCP Server；后续会继续实现自然语言 Agent 和测试完善。
 
 ## 项目状态
 
 版本：v1.0
-状态：数据库连接层已完成
+状态：MCP Server 已完成
 负责人：hsx
 
 ## 项目目标
@@ -90,10 +90,12 @@ time-management-assistant/
 创建虚拟环境并安装依赖：
 
 ```bash
-python3 -m venv .venv
+python3.10 -m venv .venv
 . .venv/bin/activate
 pip install -r time-management-assistant/backend/requirements.txt
 ```
+
+Step 7 引入了官方 MCP SDK，因此项目虚拟环境现在需要 Python 3.10 或更新版本。
 
 复制环境变量模板：
 
@@ -195,3 +197,45 @@ SCHEDULER_LOG_LEVEL=INFO
 ```
 
 远程开发时，运行 scheduler 前需要先保持 PostgreSQL SSH 隧道开启。
+
+## MCP Server
+
+MCP Server 会把现有任务能力暴露为本地工具，供 Codex、Claude Desktop、Cursor、ChatGPT Agent 和其他 MCP 客户端调用。Step 7 只实现本地 `stdio` transport，暂不实现 HTTP 或 SSE transport。
+
+安装依赖：
+
+```bash
+. .venv/bin/activate
+pip install -r time-management-assistant/backend/requirements.txt
+```
+
+在 `time-management-assistant/backend/.env` 中配置本地 MCP 访问参数：
+
+```text
+MCP_AUTH_REQUIRED=true
+MCP_AUTH_TOKEN=<local-mcp-token>
+DATABASE_URL=postgresql+psycopg://time_assistant:<password>@127.0.0.1:5432/time_management_assistant
+```
+
+远程开发时，先保持 PostgreSQL SSH 隧道开启，然后启动 MCP Server：
+
+```bash
+python time-management-assistant/mcp_server/server.py
+```
+
+已暴露 MCP tools：
+
+```text
+create_task
+update_task
+delete_task
+query_task
+list_today_tasks
+query_schedule
+complete_task
+set_recurring_task
+daily_summary
+check_reminders
+```
+
+`delete_task` 必须在 Agent 或客户端已经向用户确认删除后才能调用。`check_reminders` 当前只会把到期提醒标记为已发送，不会真正发送 Telegram、Email、Bark、企业微信或钉钉通知。
