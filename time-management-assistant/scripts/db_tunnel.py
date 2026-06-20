@@ -126,7 +126,12 @@ def run_with_password(command: list[str], password: str) -> int:
             if not sent_password and b"password:" in lowered:
                 os.write(master_fd, (password + "\n").encode())
                 sent_password = True
-        return process.returncode or 0
+        returncode = process.returncode or 0
+        if returncode != 0:
+            message = output.decode(errors="replace").replace(password, "***").strip()
+            if message:
+                print(message, file=sys.stderr)
+        return returncode
     finally:
         os.close(master_fd)
 

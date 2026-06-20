@@ -42,6 +42,8 @@ time-management-assistant/
 └── tests/
 ```
 
+架构说明：[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+
 ## 推荐开发顺序
 
 1. PRD
@@ -217,6 +219,15 @@ CC_CONNECT_TIMEOUT_SECONDS=30
 通知发送成功时，worker 会设置 `reminders.status=sent`、写入 `sent_at`，并把关联 task 标记为 `reminded=true`。发送失败时，worker 会设置 `reminders.status=failed` 和错误信息，关联 task 不会被标记为已提醒。已经是 `sent` 或 `failed` 的 reminder 不会重复发送。
 
 远程开发时，运行 scheduler 前需要先保持 PostgreSQL SSH 隧道开启。
+
+## 本地运行检查
+
+使用 doctor 脚本检查 `.env`、数据库隧道、PostgreSQL 连接、通知配置、scheduler
+可加载性和 launchd 服务状态。该脚本不会修改数据库，也不会发送通知。
+
+```bash
+python time-management-assistant/scripts/doctor.py
+```
 
 ## 本地运行助手
 

@@ -41,6 +41,8 @@ time-management-assistant/
 └── tests/
 ```
 
+Architecture documentation: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+
 ## Recommended Development Order
 
 1. PRD
@@ -217,6 +219,12 @@ For unattended local running on macOS, install LaunchAgents for the database tun
 python time-management-assistant/scripts/launchd.py install
 python time-management-assistant/scripts/launchd.py status
 python time-management-assistant/scripts/launchd.py uninstall
+```
+
+Check local runtime readiness without sending notifications or modifying data:
+
+```bash
+python time-management-assistant/scripts/doctor.py
 ```
 
 The generated LaunchAgent plists live in `~/Library/LaunchAgents`, and logs live in `~/Library/Logs/time-management-assistant`. The plists do not contain SSH, database, Bark, or cc-connect secrets; runtime secrets stay in the ignored `backend/.env`.
