@@ -29,6 +29,7 @@ class NotificationSettings:
     bark_sound: str | None
     bark_group: str | None
     cc_connect_project: str
+    cc_connect_session_key: str | None
     cc_connect_command: str
     cc_connect_timeout_seconds: float
 
@@ -67,6 +68,7 @@ def load_notification_settings(env: Mapping[str, str] | None = None) -> Notifica
         bark_sound=source.get("BARK_SOUND") or "bell",
         bark_group=source.get("BARK_GROUP") or "Time Management Assistant",
         cc_connect_project=source.get("CC_CONNECT_PROJECT", "my-project"),
+        cc_connect_session_key=source.get("CC_CONNECT_SESSION_KEY") or None,
         cc_connect_command=source.get("CC_CONNECT_COMMAND", "cc-connect"),
         cc_connect_timeout_seconds=float(source.get("CC_CONNECT_TIMEOUT_SECONDS", "30")),
     )
@@ -91,6 +93,7 @@ def create_notifier_from_env(env: Mapping[str, str] | None = None) -> Notifier:
         notifiers.append(
             CCConnectNotifier(
                 project=settings.cc_connect_project,
+                session_key=settings.cc_connect_session_key,
                 command=settings.cc_connect_command,
                 timeout_seconds=settings.cc_connect_timeout_seconds,
             )

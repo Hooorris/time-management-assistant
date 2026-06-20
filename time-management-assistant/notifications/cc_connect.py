@@ -10,10 +10,12 @@ class CCConnectNotifier:
         self,
         *,
         project: str = "my-project",
+        session_key: str | None = None,
         command: str = "cc-connect",
         timeout_seconds: float = 30.0,
     ) -> None:
         self.project = project
+        self.session_key = session_key
         self.command = command
         self.timeout_seconds = timeout_seconds
 
@@ -32,9 +34,13 @@ class CCConnectNotifier:
             )
 
         text = self._format_message(message)
+        command = [self.command, "send", "-p", self.project]
+        if self.session_key:
+            command.extend(["-s", self.session_key])
+        command.extend(["-m", text])
         try:
             result = subprocess.run(
-                [self.command, "send", "-p", self.project, "-m", text],
+                command,
                 capture_output=True,
                 text=True,
                 timeout=self.timeout_seconds,

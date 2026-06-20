@@ -105,6 +105,33 @@ def test_cc_connect_notifier_success(monkeypatch) -> None:
     ]
 
 
+def test_cc_connect_notifier_uses_session_key(monkeypatch) -> None:
+    calls = []
+
+    def fake_run(args, **kwargs):
+        calls.append((args, kwargs))
+        return type("Result", (), {"returncode": 0, "stdout": "sent\n", "stderr": ""})()
+
+    monkeypatch.setattr("notifications.cc_connect.subprocess.run", fake_run)
+    notifier = CCConnectNotifier(project="time-management-assistant", session_key="session-1")
+
+    result = notifier.send(
+        NotificationMessage(channel="wechat_work", title="Test title", body="Test body")
+    )
+
+    assert result.success is True
+    assert calls[0][0] == [
+        "cc-connect",
+        "send",
+        "-p",
+        "time-management-assistant",
+        "-s",
+        "session-1",
+        "-m",
+        "Test title\n\nTest body",
+    ]
+
+
 def test_cc_connect_notifier_failure_returns_error(monkeypatch) -> None:
     def fake_run(args, **kwargs):
         return type("Result", (), {"returncode": 2, "stdout": "", "stderr": "boom"})()
@@ -142,9 +169,11 @@ def test_factory_creates_cc_connect_notifier_from_env() -> None:
         {
             "NOTIFICATION_ENABLED": "true",
             "NOTIFICATION_CHANNELS": "wechat_work",
-            "CC_CONNECT_PROJECT": "my-project",
+            "CC_CONNECT_PROJECT": "time-management-assistant",
+            "CC_CONNECT_SESSION_KEY": "session-1",
         }
     )
 
     assert isinstance(notifier, CompositeNotifier)
     assert "wechat_work" in notifier.notifiers
+    assert notifier.notifiers["wechat_work"].session_key == "session-1"
